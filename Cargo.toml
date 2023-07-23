@@ -1,0 +1,19 @@
+[workspace.package]
+authors = [
+    "goro-network Developers <https://github.com/goro-network>",
+    "Aditya Kresna <kresna@gemtek.id>",
+]
+edition = "2021"
+license = "MIT"
+publish = false
+repository = "https://github.com/goro-network/goro-tx-indexer"
+version = "1.0.0-alpha.7"
+
+[workspace]
+members = ["service"]
+
+[patch.crates-io]
+sp-core = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
+sp-core-hashing = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
+sp-runtime = { git = "https://github.com/paritytech/substrate.git", branch = "polkadot-v1.0.0" }
+ss58-registry = { git = "https://github.com/goro-network/ss58-registry", rev = "899ca6d" }
