@@ -1,6 +1,32 @@
+#[derive(serde::Deserialize)]
+struct TxQuery {
+    actor: String,
+    from_utc: Option<chrono::DateTime<chrono::Utc>>,
+    to_utc: Option<chrono::DateTime<chrono::Utc>>,
+    limit: Option<u32>,
+}
+
 #[actix_web::get("/")]
-async fn hello() -> impl actix_web::Responder {
-    "Hello!"
+async fn actor_historical(
+    state: actix_web::web::Data<crate::services::ServiceState>,
+    query: actix_web::web::Query<TxQuery>,
+) -> impl actix_web::Responder {
+    let related_tx = state
+        .get_related_transactions(&query.actor, query.from_utc, query.to_utc, query.limit)
+        .await;
+
+    if related_tx.is_err() {
+        crate::logger::error!("{}", related_tx.err().unwrap());
+
+        return actix_web::HttpResponse::Forbidden().finish();
+    }
+
+    let related_tx = related_tx.unwrap();
+    let related_tx_json = serde_json::to_string_pretty(&related_tx).unwrap();
+
+    actix_web::HttpResponse::Ok()
+        .content_type("application/json")
+        .body(related_tx_json)
 }
 
 pub(super) async fn run_endpoints(
@@ -13,7 +39,7 @@ pub(super) async fn run_endpoints(
         actix_web::App::new()
             .app_data(state.clone())
             .wrap(actix_web::middleware::Logger::default())
-            .service(hello)
+            .service(actor_historical)
     })
     .bind(endpoint_socket)?
     .run()

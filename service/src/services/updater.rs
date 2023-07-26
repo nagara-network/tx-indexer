@@ -118,7 +118,7 @@ async fn get_transactions(
 
         if let crate::metadata::goro::api::Call::Balances(_) = root_extrinsic {
             let events = events_result.unwrap();
-            let call_hash = hex::encode(events.extrinsic_hash().as_bytes());
+            let call_hash = format!("0x{}", hex::encode(events.extrinsic_hash().as_bytes()));
             let events = events.iter().flatten();
             let mut new_transaction = crate::entities::NewTransaction {
                 hash: call_hash,
@@ -177,7 +177,13 @@ pub(super) async fn run_updater(
     while state.continue_running() {
         tokio::time::sleep(waiting_for_reconnect).await;
 
-        let chain_api = subxt::OnlineClient::<subxt::PolkadotConfig>::from_url(&rpc_uri).await?;
+        let chain_api = subxt::OnlineClient::<subxt::PolkadotConfig>::from_url(&rpc_uri).await;
+
+        if chain_api.is_err() {
+            continue;
+        }
+
+        let chain_api = chain_api.unwrap();
 
         while state.continue_running() {
             let block_query_result = get_finalized_block_number(&chain_api).await;
