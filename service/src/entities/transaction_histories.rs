@@ -1,4 +1,4 @@
-use sqlx::ConnectOptions;
+use sqlx::{ConnectOptions, Connection};
 use sqlx::{Executor, FromRow};
 
 #[derive(Clone)]
@@ -8,8 +8,8 @@ pub(super) struct TransactionHistories {
 
 impl TransactionHistories {
     const FILENAME: &'static str = "transaction_histories.sqlite";
-    const MAX_UNIXTIME: i64 = 4_102_444_800;
-    const MIN_UNIXTIME: i64 = 1_672_531_200;
+    const MAX_UNIXTIME: i64 = 4_102_444_800_000;
+    const MIN_UNIXTIME: i64 = 1_672_531_200_000;
     const SQL_CREATE: &'static str =
         include_str!("../../sql_scripts/transaction_histories/table_create.sql");
     const SQL_INSERT_ROW: &'static str =
@@ -59,22 +59,26 @@ impl TransactionHistories {
 
     pub(super) async fn insert_row(
         &self,
-        new_transaction: super::NewTransaction,
+        new_transaction: Vec<super::NewTransaction>,
     ) -> anyhow::Result<()> {
-        let amount_bytes = new_transaction.amount.to_le_bytes().to_vec();
-        let fee_bytes = new_transaction.fee.to_le_bytes().to_vec();
-
-        let query = sqlx::query(Self::SQL_INSERT_ROW)
-            .bind(new_transaction.hash)
-            .bind(new_transaction.sender)
-            .bind(new_transaction.receiver)
-            .bind(amount_bytes)
-            .bind(fee_bytes)
-            .bind(new_transaction.blocknumber)
-            .bind(new_transaction.unixtime);
-
         let mut conn = self.inner.acquire().await?;
-        conn.execute(query).await?;
+        let mut batch_insert = conn.begin().await?;
+
+        for row in new_transaction {
+            let amount_bytes = row.amount.to_le_bytes().to_vec();
+            let fee_bytes = row.fee.to_le_bytes().to_vec();
+            let query = sqlx::query(Self::SQL_INSERT_ROW)
+                .bind(row.hash)
+                .bind(row.sender)
+                .bind(row.receiver)
+                .bind(amount_bytes)
+                .bind(fee_bytes)
+                .bind(row.blocknumber)
+                .bind(row.unixtime);
+            batch_insert.execute(query).await?;
+        }
+
+        batch_insert.commit().await?;
 
         Ok(())
     }

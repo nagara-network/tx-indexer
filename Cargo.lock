@@ -1374,6 +1374,7 @@ dependencies = [
  "chrono",
  "env_logger",
  "futures",
+ "hex",
  "log",
  "mimalloc",
  "parity-scale-codec",
@@ -1383,6 +1384,7 @@ dependencies = [
  "serde_json",
  "sp-core",
  "sqlx",
+ "ss58-registry",
  "subxt",
  "tokio",
 ]

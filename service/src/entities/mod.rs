@@ -2,7 +2,6 @@ mod processed_blocks;
 mod transaction_histories;
 
 use chrono::TimeZone;
-use rand::Rng;
 use sqlx::Row;
 
 #[derive(Clone)]
@@ -13,8 +12,6 @@ pub struct EntityConnector {
 
 impl EntityConnector {
     pub const DIR_DATA: &'static str = "./data";
-    pub const FILE_PROCESSED_BLOCKS: &'static str = "processed_blocks.sqlite";
-    pub const FILE_TRANSACTION_HISTORIES: &'static str = "transaction_histories.sqlite";
 
     pub async fn new() -> anyhow::Result<Self> {
         tokio::fs::create_dir_all(Self::DIR_DATA).await?;
@@ -44,12 +41,16 @@ impl EntityConnector {
         self.conn_transaction_histories.close().await;
     }
 
-    pub async fn insert_new_transaction(
+    pub async fn insert_new_transactions(
         &self,
-        new_transaction: NewTransaction,
+        new_transactions: Vec<NewTransaction>,
     ) -> anyhow::Result<()> {
+        if new_transactions.is_empty() {
+            return Ok(());
+        }
+
         self.conn_transaction_histories
-            .insert_row(new_transaction)
+            .insert_row(new_transactions)
             .await?;
 
         Ok(())
@@ -66,6 +67,14 @@ impl EntityConnector {
             .get_related(actor, from_inclusive, to_inclusive, limit)
             .await
     }
+
+    pub async fn get_next_unprocessed_block(&self) -> anyhow::Result<u32> {
+        self.conn_processed_blocks.select_next_block().await
+    }
+
+    pub async fn commit_processed_block(&self, block_number: u32) -> anyhow::Result<()> {
+        self.conn_processed_blocks.commit(block_number).await
+    }
 }
 
 pub struct NewTransaction {
@@ -76,42 +85,6 @@ pub struct NewTransaction {
     pub fee: u128,
     pub blocknumber: u32,
     pub unixtime: i64,
-}
-
-impl NewTransaction {
-    pub(super) fn create_random() -> Self {
-        let hash = rand::thread_rng()
-            .sample_iter(rand::distributions::Alphanumeric)
-            .take(32)
-            .map(char::from)
-            .collect();
-        let sender = rand::thread_rng()
-            .sample_iter(rand::distributions::Alphanumeric)
-            .take(32)
-            .map(char::from)
-            .collect();
-        let receiver = rand::thread_rng()
-            .sample_iter(rand::distributions::Alphanumeric)
-            .take(32)
-            .map(char::from)
-            .collect();
-        let mut rng = rand::thread_rng();
-        let amount = rng.gen();
-        let fee = rng.gen();
-        let current_timestamp = chrono::Utc::now().timestamp();
-        let blocknumber = ((current_timestamp - 1_690_133_930) / 10) as u32;
-        let unixtime = current_timestamp;
-
-        Self {
-            hash,
-            sender,
-            receiver,
-            amount,
-            fee,
-            blocknumber,
-            unixtime,
-        }
-    }
 }
 
 #[derive(Clone, serde::Deserialize, serde::Serialize)]
@@ -139,8 +112,8 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for RelatedTransaction {
         let amount_bytes: Vec<u8> = row.try_get("amount")?;
         let fee_bytes: Vec<u8> = row.try_get("fee")?;
         let blocknumber: u32 = row.try_get("at_block_time")?;
-        let unixtime_seconds: i64 = row.try_get("at_unix_time")?;
-        let unixtime = chrono::Utc.timestamp_opt(unixtime_seconds, 0).unwrap();
+        let unixtime_ms: i64 = row.try_get("at_unix_time")?;
+        let unixtime = chrono::Utc.timestamp_millis_opt(unixtime_ms).unwrap();
 
         if amount_bytes.len() != Self::LEN_U128 {
             crate::logger::error!("Bad `amount` at `id` => {}", id);
