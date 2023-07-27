@@ -18,7 +18,7 @@ fn get_socket_for_endpoint() -> String {
 
 fn get_rpc_uri() -> String {
     match std::env::var(ENVKEY_RPC_URI) {
-        Err(_) => "ws://main-00.goro.network:443".to_owned(),
+        Err(_) => "wss://main-00.goro.network:443".to_owned(),
         Ok(var) => var,
     }
 }

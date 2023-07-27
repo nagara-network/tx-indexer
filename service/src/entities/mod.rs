@@ -56,7 +56,7 @@ impl EntityConnector {
         Ok(())
     }
 
-    pub async fn get_related_transactions(
+    pub async fn get_transactions_by_account(
         &self,
         actor: &str,
         from_inclusive: Option<chrono::DateTime<chrono::Utc>>,
@@ -64,8 +64,12 @@ impl EntityConnector {
         limit: Option<u32>,
     ) -> anyhow::Result<Vec<RelatedTransaction>> {
         self.conn_transaction_histories
-            .get_related(actor, from_inclusive, to_inclusive, limit)
+            .get_by_account(actor, from_inclusive, to_inclusive, limit)
             .await
+    }
+
+    pub async fn get_transaction_by_hash(&self, hash: &str) -> anyhow::Result<RelatedTransaction> {
+        self.conn_transaction_histories.get_by_hash(hash).await
     }
 
     pub async fn get_next_unprocessed_block(&self) -> anyhow::Result<u32> {

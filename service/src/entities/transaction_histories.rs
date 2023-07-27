@@ -14,8 +14,10 @@ impl TransactionHistories {
         include_str!("../../sql_scripts/transaction_histories/table_create.sql");
     const SQL_INSERT_ROW: &'static str =
         include_str!("../../sql_scripts/transaction_histories/insert_row.sql");
-    const SQL_SELECT_RELATED: &'static str =
-        include_str!("../../sql_scripts/transaction_histories/select_related_by_time.sql");
+    const SQL_SELECT_BY_ACCOUNT: &'static str =
+        include_str!("../../sql_scripts/transaction_histories/select_by_account.sql");
+    const SQL_SELECT_BY_HASH: &'static str =
+        include_str!("../../sql_scripts/transaction_histories/select_by_hash.sql");
 
     pub(super) async fn new() -> anyhow::Result<Self> {
         let db_path = format!("{}/{}", super::EntityConnector::DIR_DATA, Self::FILENAME);
@@ -83,9 +85,21 @@ impl TransactionHistories {
         Ok(())
     }
 
-    pub(super) async fn get_related(
+    pub(super) async fn get_by_hash(
         &self,
-        actor: &str,
+        hash: &str,
+    ) -> anyhow::Result<super::RelatedTransaction> {
+        let query = sqlx::query(Self::SQL_SELECT_BY_HASH).bind(hash);
+        let mut conn = self.inner.acquire().await?;
+        let result_db = conn.fetch_one(query).await?;
+        let result = super::RelatedTransaction::from_row(&result_db)?;
+
+        Ok(result)
+    }
+
+    pub(super) async fn get_by_account(
+        &self,
+        account: &str,
         from_inclusive: Option<chrono::DateTime<chrono::Utc>>,
         to_inclusive: Option<chrono::DateTime<chrono::Utc>>,
         limit: Option<u32>,
@@ -106,8 +120,8 @@ impl TransactionHistories {
             u32::MAX - 1
         };
 
-        let query = sqlx::query(Self::SQL_SELECT_RELATED)
-            .bind(actor)
+        let query = sqlx::query(Self::SQL_SELECT_BY_ACCOUNT)
+            .bind(account)
             .bind(from_unixtime)
             .bind(to_unixtime)
             .bind(max_row);

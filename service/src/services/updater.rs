@@ -177,6 +177,7 @@ pub(super) async fn run_updater(
     while state.continue_running() {
         tokio::time::sleep(waiting_for_reconnect).await;
 
+        crate::logger::info!("Starting up Chain API Client...");
         let chain_api = subxt::OnlineClient::<subxt::PolkadotConfig>::from_url(&rpc_uri).await;
 
         if chain_api.is_err() {
