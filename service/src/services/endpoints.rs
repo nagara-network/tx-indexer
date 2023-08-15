@@ -54,6 +54,13 @@ async fn get_by_hash(
         .body(related_tx_json)
 }
 
+fn get_cors_config() -> actix_cors::Cors {
+    actix_cors::Cors::default().allowed_origin_fn(|origin, _| {
+        origin.as_bytes().ends_with(b".goro.network")
+            || origin.as_bytes().ends_with(b".krigan.network")
+    })
+}
+
 pub(super) async fn run_endpoints(
     state: actix_web::web::Data<super::ServiceState>,
 ) -> anyhow::Result<()> {
@@ -61,8 +68,11 @@ pub(super) async fn run_endpoints(
     let endpoint_socket = crate::get_socket_for_endpoint();
 
     actix_web::HttpServer::new(move || {
+        let cors = get_cors_config();
+
         actix_web::App::new()
             .app_data(state.clone())
+            .wrap(cors)
             .wrap(actix_web::middleware::Logger::default())
             .service(get_by_actor)
             .service(get_by_hash)
