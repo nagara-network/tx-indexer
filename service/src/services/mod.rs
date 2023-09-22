@@ -7,7 +7,8 @@ struct ServiceState {
 }
 
 impl ServiceState {
-    async fn get_thread_safe_instance() -> anyhow::Result<actix_web::web::Data<Self>> {
+    async fn get_thread_safe_instance(
+    ) -> anyhow::Result<actix_web::web::Data<Self>> {
         let db_handle = crate::entities::EntityConnector::new().await?;
         let shutdown_flag = core::sync::atomic::AtomicBool::new(false);
         let instance = Self {
@@ -54,14 +55,21 @@ pub(super) async fn run_services() -> anyhow::Result<()> {
     let endpoints_handle = endpoints::run_endpoints(state_0);
     let updater_handle = updater::run_updater(state_1);
 
-    let (endpoints_result, updater_result) = futures::join!(endpoints_handle, updater_handle);
+    let (endpoints_result, updater_result) =
+        futures::join!(endpoints_handle, updater_handle);
 
     if endpoints_result.is_err() {
-        crate::logger::error!("Endpoints Error: {}", endpoints_result.err().unwrap());
+        crate::logger::error!(
+            "Endpoints Error: {}",
+            endpoints_result.err().unwrap()
+        );
     }
 
     if updater_result.is_err() {
-        crate::logger::error!("Updater Error: {}", updater_result.err().unwrap());
+        crate::logger::error!(
+            "Updater Error: {}",
+            updater_result.err().unwrap()
+        );
     }
 
     Ok(())

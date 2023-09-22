@@ -10,17 +10,21 @@ impl TransactionHistories {
     const FILENAME: &'static str = "transaction_histories.sqlite";
     const MAX_UNIXTIME: i64 = 4_102_444_800_000;
     const MIN_UNIXTIME: i64 = 1_672_531_200_000;
-    const SQL_CREATE: &'static str =
-        include_str!("../../sql_scripts/transaction_histories/table_create.sql");
+    const SQL_CREATE: &'static str = include_str!(
+        "../../sql_scripts/transaction_histories/table_create.sql"
+    );
     const SQL_INSERT_ROW: &'static str =
         include_str!("../../sql_scripts/transaction_histories/insert_row.sql");
-    const SQL_SELECT_BY_ACCOUNT: &'static str =
-        include_str!("../../sql_scripts/transaction_histories/select_by_account.sql");
-    const SQL_SELECT_BY_HASH: &'static str =
-        include_str!("../../sql_scripts/transaction_histories/select_by_hash.sql");
+    const SQL_SELECT_BY_ACCOUNT: &'static str = include_str!(
+        "../../sql_scripts/transaction_histories/select_by_account.sql"
+    );
+    const SQL_SELECT_BY_HASH: &'static str = include_str!(
+        "../../sql_scripts/transaction_histories/select_by_hash.sql"
+    );
 
     pub(super) async fn new() -> anyhow::Result<Self> {
-        let db_path = format!("{}/{}", super::EntityConnector::DIR_DATA, Self::FILENAME);
+        let db_path =
+            format!("{}/{}", super::EntityConnector::DIR_DATA, Self::FILENAME);
         let connection_option = sqlx::sqlite::SqliteConnectOptions::new()
             .auto_vacuum(sqlx::sqlite::SqliteAutoVacuum::Incremental)
             .busy_timeout(tokio::time::Duration::from_secs(5))
@@ -30,7 +34,10 @@ impl TransactionHistories {
             .immutable(false)
             .journal_mode(sqlx::sqlite::SqliteJournalMode::Persist)
             .locking_mode(sqlx::sqlite::SqliteLockingMode::Normal)
-            .log_slow_statements(log::LevelFilter::Warn, tokio::time::Duration::from_secs(3))
+            .log_slow_statements(
+                log::LevelFilter::Warn,
+                tokio::time::Duration::from_secs(3),
+            )
             .log_statements(log::LevelFilter::Debug)
             .optimize_on_close(true, None)
             .shared_cache(false)
@@ -45,7 +52,8 @@ impl TransactionHistories {
     }
 
     async fn table_create_if_not_exist(&self) -> anyhow::Result<()> {
-        let mut conn: sqlx::pool::PoolConnection<sqlx::Sqlite> = self.inner.acquire().await?;
+        let mut conn: sqlx::pool::PoolConnection<sqlx::Sqlite> =
+            self.inner.acquire().await?;
         conn.execute(Self::SQL_CREATE).await?;
 
         Ok(())

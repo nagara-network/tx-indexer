@@ -16,7 +16,12 @@ async fn get_by_actor(
     query: actix_web::web::Query<TxQuery>,
 ) -> impl actix_web::Responder {
     let related_tx = state
-        .get_transactions_by_account(&account, query.from_utc, query.to_utc, query.limit)
+        .get_transactions_by_account(
+            &account,
+            query.from_utc,
+            query.to_utc,
+            query.limit,
+        )
         .await;
 
     if related_tx.is_err() {
@@ -76,7 +81,9 @@ pub(super) async fn run_endpoints(
             .wrap(actix_web::middleware::Logger::default())
             .service(get_by_actor)
             .service(get_by_hash)
-            .default_service(actix_web::web::route().to(reject_unmapped_handler))
+            .default_service(
+                actix_web::web::route().to(reject_unmapped_handler),
+            )
     })
     .bind(endpoint_socket)?
     .run()

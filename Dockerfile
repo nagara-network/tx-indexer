@@ -13,7 +13,7 @@ RUN RUSTFLAGS="${RUST_BUILD_ARG}" cargo build --release
 FROM ubuntu:22.04
 
 LABEL org.opencontainers.image.authors "goro Developers <dev@goro.network>"
-LABEL org.opencontainers.image.source "https://github.com/goro-network/goro-tx-indexer"
+LABEL org.opencontainers.image.source "https://github.com/goro-network/tx-indexer"
 LABEL org.opencontainers.image.description "GORO Transaction Indexer"
 
 RUN apt-get update && \

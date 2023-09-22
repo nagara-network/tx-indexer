@@ -11,11 +11,13 @@ impl ProcessedBlocks {
         include_str!("../../sql_scripts/processed_blocks/insert_row.sql");
     const SQL_CREATE: &'static str =
         include_str!("../../sql_scripts/processed_blocks/table_create.sql");
-    const SQL_SELECT_NEXT: &'static str =
-        include_str!("../../sql_scripts/processed_blocks/select_next_block.sql");
+    const SQL_SELECT_NEXT: &'static str = include_str!(
+        "../../sql_scripts/processed_blocks/select_next_block.sql"
+    );
 
     pub(super) async fn new() -> anyhow::Result<Self> {
-        let db_path = format!("{}/{}", super::EntityConnector::DIR_DATA, Self::FILENAME);
+        let db_path =
+            format!("{}/{}", super::EntityConnector::DIR_DATA, Self::FILENAME);
         let connection_option = sqlx::sqlite::SqliteConnectOptions::new()
             .auto_vacuum(sqlx::sqlite::SqliteAutoVacuum::Incremental)
             .busy_timeout(tokio::time::Duration::from_secs(1))
@@ -38,7 +40,8 @@ impl ProcessedBlocks {
     }
 
     async fn table_create_if_not_exist(&self) -> anyhow::Result<()> {
-        let mut conn: sqlx::pool::PoolConnection<sqlx::Sqlite> = self.inner.acquire().await?;
+        let mut conn: sqlx::pool::PoolConnection<sqlx::Sqlite> =
+            self.inner.acquire().await?;
         conn.execute(Self::SQL_CREATE).await?;
 
         Ok(())

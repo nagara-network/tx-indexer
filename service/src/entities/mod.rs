@@ -15,8 +15,10 @@ impl EntityConnector {
 
     pub async fn new() -> anyhow::Result<Self> {
         tokio::fs::create_dir_all(Self::DIR_DATA).await?;
-        let conn_processed_blocks = processed_blocks::ProcessedBlocks::new().await?;
-        let conn_transaction_histories = transaction_histories::TransactionHistories::new().await?;
+        let conn_processed_blocks =
+            processed_blocks::ProcessedBlocks::new().await?;
+        let conn_transaction_histories =
+            transaction_histories::TransactionHistories::new().await?;
 
         Ok(Self {
             conn_processed_blocks,
@@ -68,7 +70,10 @@ impl EntityConnector {
             .await
     }
 
-    pub async fn get_transaction_by_hash(&self, hash: &str) -> anyhow::Result<RelatedTransaction> {
+    pub async fn get_transaction_by_hash(
+        &self,
+        hash: &str,
+    ) -> anyhow::Result<RelatedTransaction> {
         self.conn_transaction_histories.get_by_hash(hash).await
     }
 
@@ -76,7 +81,10 @@ impl EntityConnector {
         self.conn_processed_blocks.select_next_block().await
     }
 
-    pub async fn commit_processed_block(&self, block_number: u32) -> anyhow::Result<()> {
+    pub async fn commit_processed_block(
+        &self,
+        block_number: u32,
+    ) -> anyhow::Result<()> {
         self.conn_processed_blocks.commit(block_number).await
     }
 }
