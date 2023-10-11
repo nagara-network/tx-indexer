@@ -12,6 +12,7 @@ version.workspace = true
 actix-cors = "0.6.4"
 actix-web = { version = "4.3.1", features = ["rustls"] }
 anyhow = "1.0.72"
+bigdecimal = { version = "0.4.1", features = ["serde"] }
 chrono = { version = "0.4.26", features = ["arbitrary", "serde"] }
 env_logger = "0.10.0"
 futures = "0.3.28"

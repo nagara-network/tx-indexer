@@ -1,8 +1,104 @@
 mod processed_blocks;
 mod transaction_histories;
 
+use bigdecimal::{BigDecimal, FromPrimitive};
 use chrono::TimeZone;
 use sqlx::Row;
+use std::fmt::Display;
+use std::ops::Div;
+
+struct DisplayableBalance(u128);
+
+impl Display for DisplayableBalance {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let (divider, unit) = match self.0 {
+            0..=999_999_999 => {
+                let divider = BigDecimal::from_u128(1_000_000).unwrap();
+                let unit = "m";
+
+                (divider, unit)
+            }
+            1_000_000_000..=999_999_999_999 => {
+                let divider = BigDecimal::from_u128(1_000_000_000).unwrap();
+                let unit = "";
+
+                (divider, unit)
+            }
+            1_000_000_000_000..=999_999_999_999_999 => {
+                let divider = BigDecimal::from_u128(1_000_000_000_000).unwrap();
+                let unit = "k";
+
+                (divider, unit)
+            }
+            1_000_000_000_000_000..=999_999_999_999_999_999 => {
+                let divider =
+                    BigDecimal::from_u128(1_000_000_000_000_000).unwrap();
+                let unit = "M";
+
+                (divider, unit)
+            }
+            1_000_000_000_000_000_000..=999_999_999_999_999_999_999 => {
+                let divider =
+                    BigDecimal::from_u128(1_000_000_000_000_000_000).unwrap();
+                let unit = "B";
+
+                (divider, unit)
+            }
+            1_000_000_000_000_000_000_000..=999_999_999_999_999_999_999_999 => {
+                let divider =
+                    BigDecimal::from_u128(1_000_000_000_000_000_000_000)
+                        .unwrap();
+                let unit = "T";
+
+                (divider, unit)
+            }
+            1_000_000_000_000_000_000_000_000
+                ..=999_999_999_999_999_999_999_999_999 => {
+                let divider =
+                    BigDecimal::from_u128(1_000_000_000_000_000_000_000_000)
+                        .unwrap();
+                let unit = "P";
+
+                (divider, unit)
+            }
+            1_000_000_000_000_000_000_000_000_000
+                ..=999_999_999_999_999_999_999_999_999_999 => {
+                let divider = BigDecimal::from_u128(
+                    1_000_000_000_000_000_000_000_000_000,
+                )
+                .unwrap();
+                let unit = "E";
+
+                (divider, unit)
+            }
+            1_000_000_000_000_000_000_000_000_000_000
+                ..=999_999_999_999_999_999_999_999_999_999_999 => {
+                let divider = BigDecimal::from_u128(
+                    1_000_000_000_000_000_000_000_000_000_000,
+                )
+                .unwrap();
+                let unit = "Y";
+
+                (divider, unit)
+            }
+            1_000_000_000_000_000_000_000_000_000_000_000..=u128::MAX => {
+                let divider = BigDecimal::from_u128(
+                    1_000_000_000_000_000_000_000_000_000_000_000,
+                )
+                .unwrap();
+                let unit = "Z";
+
+                (divider, unit)
+            }
+        };
+        let value = BigDecimal::from_u128(self.0)
+            .unwrap()
+            .div(divider)
+            .with_scale_round(4, bigdecimal::RoundingMode::Down);
+
+        write!(f, "{value} {unit}GORO")
+    }
+}
 
 #[derive(Clone)]
 pub struct EntityConnector {
@@ -106,7 +202,9 @@ pub struct RelatedTransaction {
     pub sender: String,
     pub receiver: String,
     pub amount: u128,
+    pub amount_str: String,
     pub fee: u128,
+    pub fee_str: String,
     pub blocknumber: u32,
     pub unixtime: chrono::DateTime<chrono::Utc>,
 }
@@ -140,7 +238,9 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for RelatedTransaction {
         amount_bytes_array.copy_from_slice(&amount_bytes[..]);
         fee_bytes_array.copy_from_slice(&fee_bytes[..]);
         let amount = u128::from_le_bytes(amount_bytes_array);
+        let amount_str = DisplayableBalance(amount).to_string();
         let fee = u128::from_le_bytes(fee_bytes_array);
+        let fee_str = DisplayableBalance(fee).to_string();
 
         Ok(Self {
             id,
@@ -148,7 +248,9 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for RelatedTransaction {
             sender,
             receiver,
             amount,
+            amount_str,
             fee,
+            fee_str,
             blocknumber,
             unixtime,
         })
