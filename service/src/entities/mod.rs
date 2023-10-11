@@ -205,6 +205,7 @@ pub struct RelatedTransaction {
     pub amount_str: String,
     pub fee: u128,
     pub fee_str: String,
+    pub total_amount_str: String,
     pub blocknumber: u32,
     pub unixtime: chrono::DateTime<chrono::Utc>,
 }
@@ -241,6 +242,8 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for RelatedTransaction {
         let amount_str = DisplayableBalance(amount).to_string();
         let fee = u128::from_le_bytes(fee_bytes_array);
         let fee_str = DisplayableBalance(fee).to_string();
+        let total_amount = DisplayableBalance(amount + fee);
+        let total_amount_str = total_amount.to_string();
 
         Ok(Self {
             id,
@@ -251,6 +254,7 @@ impl sqlx::FromRow<'_, sqlx::sqlite::SqliteRow> for RelatedTransaction {
             amount_str,
             fee,
             fee_str,
+            total_amount_str,
             blocknumber,
             unixtime,
         })
