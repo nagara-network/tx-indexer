@@ -96,7 +96,7 @@ impl Display for DisplayableBalance {
             .div(divider)
             .with_scale_round(4, bigdecimal::RoundingMode::Down);
 
-        write!(f, "{value} {unit}GORO")
+        write!(f, "{value} {unit}NGR")
     }
 }
 

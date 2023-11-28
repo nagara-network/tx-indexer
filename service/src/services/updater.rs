@@ -126,10 +126,10 @@ async fn get_transactions(
             "{block_number}-{extrinsic_index} contains {event_count} events"
         );
         let root_extrinsic = extrinsic
-            .as_root_extrinsic::<crate::metadata::goro::api::Call>()?;
+            .as_root_extrinsic::<crate::metadata::nagara::api::Call>()?;
 
-        if let crate::metadata::goro::api::Call::Timestamp(
-            crate::metadata::goro::api::timestamp::Call::set {
+        if let crate::metadata::nagara::api::Call::Timestamp(
+            crate::metadata::nagara::api::timestamp::Call::set {
                 now,
             },
         ) = root_extrinsic
@@ -145,14 +145,14 @@ async fn get_transactions(
         let mut gas_fee_events = Vec::new();
 
         events
-            .find::<crate::metadata::goro::api::balances::events::Transfer>()
+            .find::<crate::metadata::nagara::api::balances::events::Transfer>()
             .for_each(|x| {
                 if let Ok(balance_transfer_event) = x {
                     balance_transfer_events.push(balance_transfer_event);
                 }
             });
         events
-            .find::<crate::metadata::goro::api::transaction_payment::events::TransactionFeePaid>()
+            .find::<crate::metadata::nagara::api::transaction_payment::events::TransactionFeePaid>()
             .for_each(|x| {
                 if let Ok(gas_fee_event) = x {
                     gas_fee_events.push(gas_fee_event);
@@ -177,7 +177,7 @@ async fn get_transactions(
         if its_not_balances_activity {
             let new_transaction = crate::entities::NewTransaction {
                 hash: call_hash.clone(),
-                sender: crate::metadata::to_goro_ss58_string(sender),
+                sender: crate::metadata::to_nagara_ss58_string(sender),
                 receiver: "GORO Network".to_owned(),
                 amount: 0,
                 fee: sender_paid_fee,
@@ -191,10 +191,10 @@ async fn get_transactions(
         for balance_transfer_event in balance_transfer_events {
             let new_transaction = crate::entities::NewTransaction {
                 hash: call_hash.clone(),
-                sender: crate::metadata::to_goro_ss58_string(
+                sender: crate::metadata::to_nagara_ss58_string(
                     balance_transfer_event.from,
                 ),
-                receiver: crate::metadata::to_goro_ss58_string(
+                receiver: crate::metadata::to_nagara_ss58_string(
                     balance_transfer_event.to,
                 ),
                 amount: balance_transfer_event.amount,

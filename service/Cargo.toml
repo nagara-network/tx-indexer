@@ -1,6 +1,6 @@
 [package]
-name = "goro-tx-indexer"
-description = "GoRo Network - Transaction Indexer Service"
+name = "nagara-tx-indexer"
+description = "nagara Network - Transaction Indexer Service"
 authors.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -27,7 +27,7 @@ rand = "0.8.5"
 scale-info = { version = "2.9.0", features = ["serde", "derive", "decode", "schema", "schemars"] }
 serde = { version = "1.0.174", features = ["derive"] }
 serde_json = { version = "1.0.103", features = ["arbitrary_precision"] }
-sp-core = { git = "https://github.com/goro-network/substrate.git", branch = "goro-network-v1.0.0-alpha" }
+sp-core = { git = "https://github.com/nagara-network/substrate.git", branch = "nagara-network-v1.0.0-alpha" }
 sqlx = { version = "0.7.1", default-features = false, features = [
     "any",
     "bit-vec",
@@ -38,7 +38,7 @@ sqlx = { version = "0.7.1", default-features = false, features = [
     "runtime-tokio-rustls",
     "sqlite",
 ] }
-ss58-registry = { git = "https://github.com/goro-network/ss58-registry", rev = "30889d6" }
+ss58-registry = { git = "https://github.com/goro-network/ss58-registry", rev = "0038a88" }
 subxt = { version = "0.31.0", features = [
     "sp-core",
     "sp-runtime",

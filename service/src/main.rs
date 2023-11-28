@@ -18,7 +18,7 @@ fn get_socket_for_endpoint() -> String {
 
 fn get_rpc_uri() -> String {
     match std::env::var(ENVKEY_RPC_URI) {
-        Err(_) => "wss://main-00.goro.network:443".to_owned(),
+        Err(_) => "wss://boot.nagara.network:443".to_owned(),
         Ok(var) => var,
     }
 }
@@ -27,7 +27,7 @@ fn get_rpc_uri() -> String {
 async fn main() -> anyhow::Result<()> {
     logger::init_logger();
     sp_core::crypto::set_default_ss58_version(
-        ss58_registry::Ss58AddressFormatRegistry::GoroAccount.into(),
+        sp_core::crypto::Ss58AddressFormatRegistry::NagaraAccount.into(),
     );
 
     services::run_services().await

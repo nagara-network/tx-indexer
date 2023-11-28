@@ -1,7 +1,7 @@
 MAKEFLAGS	+=	--jobs 1 --silent --environment-overrides
 SHELL		:=	/bin/bash
-CPU_ARCH	:=	$(shell if [[ "$(shell uname -p)" = "x86_64" ]]; then echo amd64; else echo arm64; fi)
-IMAGE_NAME	:=	ghcr.io/goro-network/goro-tx-indexer:${CPU_ARCH}
+CPU_ARCH	:=	$(shell if [[ "$(shell uname -m)" = "x86_64" ]]; then echo amd64; else echo arm64; fi)
+IMAGE_NAME	:=	ghcr.io/nagara-network/tx-indexer:${CPU_ARCH}
 
 .PHONY: all check debug release docker docker-push refresh clean
 .ONESHELL: all check debug release docker docker-push refresh clean

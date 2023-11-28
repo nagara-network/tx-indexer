@@ -1,4 +1,4 @@
-pub use log::{debug, error, info, trace, warn};
+pub use log::{error, info};
 
 const ENVKEY_RUST_LOG: &str = "RUST_LOG";
 
