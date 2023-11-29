@@ -309,7 +309,7 @@ pub(super) async fn run_updater(
                 loop {
                     tokio::time::sleep(GRACE_TIME_CATCHUP).await;
                     let indexed_blocks =
-                        state.get_next_unprocessed_block().await? - 1;
+                        state.get_next_unprocessed_block().await?;
                     let catchup_progress =
                         block_delta - (finalized_block_number - indexed_blocks);
                     let catchup_progress_percent =

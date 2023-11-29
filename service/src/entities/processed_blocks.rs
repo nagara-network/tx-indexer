@@ -63,7 +63,9 @@ impl ProcessedBlocks {
         match conn.fetch_one(query).await {
             Err(sqlx::Error::RowNotFound) => Ok(0),
             Err(err) => {
-                crate::logger::error!("DB error because of bad program!");
+                crate::logger::error!(
+                    "DB error because of bad program!\n{err}"
+                );
 
                 Err(err.into())
             }

@@ -42,6 +42,7 @@ fn get_cors_config() -> actix_cors::Cors {
     actix_cors::Cors::default().allowed_origin_fn(|origin, _| {
         origin.as_bytes().ends_with(b".goro.network")
             || origin.as_bytes().ends_with(b".krigan.network")
+            || origin.as_bytes().ends_with(b".nagara.network")
     })
 }
 
