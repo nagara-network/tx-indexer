@@ -38,27 +38,6 @@ async fn get_by_actor(
         .body(related_tx_json)
 }
 
-#[actix_web::get("/hash/{hash}")]
-async fn get_by_hash(
-    state: actix_web::web::Data<crate::services::ServiceState>,
-    hash: actix_web::web::Path<String>,
-) -> impl actix_web::Responder {
-    let related_tx = state.get_transaction_by_hash(hash.as_str()).await;
-
-    if related_tx.is_err() {
-        crate::logger::error!("{}", related_tx.err().unwrap());
-
-        return actix_web::HttpResponse::NotFound().finish();
-    }
-
-    let related_tx = related_tx.unwrap();
-    let related_tx_json = serde_json::to_string_pretty(&related_tx).unwrap();
-
-    actix_web::HttpResponse::Ok()
-        .content_type("application/json")
-        .body(related_tx_json)
-}
-
 fn get_cors_config() -> actix_cors::Cors {
     actix_cors::Cors::default().allowed_origin_fn(|origin, _| {
         origin.as_bytes().ends_with(b".goro.network")
@@ -80,7 +59,6 @@ pub(super) async fn run_endpoints(
             .wrap(cors)
             .wrap(actix_web::middleware::Logger::default())
             .service(get_by_actor)
-            .service(get_by_hash)
             .default_service(
                 actix_web::web::route().to(reject_unmapped_handler),
             )

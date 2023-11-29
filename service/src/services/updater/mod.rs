@@ -1,3 +1,25 @@
+mod transient_worker;
+
+const GRACE_TIME_GFB: tokio::time::Duration =
+    tokio::time::Duration::from_secs(1);
+const GRACE_TIME_PROCESSOR: tokio::time::Duration =
+    tokio::time::Duration::from_millis(100);
+const GRACE_TIME_RECONNECT: tokio::time::Duration =
+    tokio::time::Duration::from_secs(5);
+const GRACE_TIME_CATCHUP: tokio::time::Duration =
+    tokio::time::Duration::from_secs(10);
+
+async fn create_rpc_client(
+) -> anyhow::Result<subxt::OnlineClient<subxt::PolkadotConfig>> {
+    let rpc_uri = crate::get_rpc_uri();
+
+    let chain_api =
+        subxt::OnlineClient::<subxt::PolkadotConfig>::from_url(&rpc_uri)
+            .await?;
+
+    anyhow::Result::Ok(chain_api)
+}
+
 async fn get_finalized_block_number(
     chain_api: &subxt::OnlineClient<subxt::PolkadotConfig>,
 ) -> anyhow::Result<(sp_core::H256, u32)> {
@@ -82,11 +104,13 @@ async fn get_block_data(
 
 async fn get_transactions(
     block_number: u32,
+    block_hash: sp_core::H256,
     block: subxt::blocks::Block<
         subxt::PolkadotConfig,
         subxt::OnlineClient<subxt::PolkadotConfig>,
     >,
 ) -> anyhow::Result<Vec<crate::entities::NewTransaction>> {
+    let block_hash = format!("0x{}", hex::encode(block_hash.0));
     let mut result = vec![];
     let mut block_timestamp = 0;
 
@@ -122,9 +146,14 @@ async fn get_transactions(
                 accumulator
             }
         });
-        crate::logger::info!(
-            "{block_number}-{extrinsic_index} contains {event_count} events"
-        );
+
+        if event_count > 1 {
+            crate::logger::info!(
+                "{block_number}-{extrinsic_index} contains {event_count} \
+                 events"
+            );
+        }
+
         let root_extrinsic = extrinsic
             .as_root_extrinsic::<crate::metadata::nagara::api::Call>()?;
 
@@ -139,8 +168,6 @@ async fn get_transactions(
             continue;
         }
 
-        let call_hash =
-            format!("0x{}", hex::encode(events.extrinsic_hash().as_bytes()));
         let mut balance_transfer_events = Vec::new();
         let mut gas_fee_events = Vec::new();
 
@@ -176,9 +203,9 @@ async fn get_transactions(
 
         if its_not_balances_activity {
             let new_transaction = crate::entities::NewTransaction {
-                hash: call_hash.clone(),
+                hash: block_hash.clone(),
                 sender: crate::metadata::to_nagara_ss58_string(sender),
-                receiver: "GORO Network".to_owned(),
+                receiver: "TheVoid".to_owned(),
                 amount: 0,
                 fee: sender_paid_fee,
                 blocknumber: block_number,
@@ -190,7 +217,7 @@ async fn get_transactions(
 
         for balance_transfer_event in balance_transfer_events {
             let new_transaction = crate::entities::NewTransaction {
-                hash: call_hash.clone(),
+                hash: block_hash.clone(),
                 sender: crate::metadata::to_nagara_ss58_string(
                     balance_transfer_event.from,
                 ),
@@ -220,11 +247,9 @@ pub(super) async fn run_updater(
     state: actix_web::web::Data<super::ServiceState>,
 ) -> anyhow::Result<()> {
     let rpc_uri = crate::get_rpc_uri();
-    let waiting_for_reconnect = tokio::time::Duration::from_secs(5);
-    let waiting_for_finalization = tokio::time::Duration::from_secs(1);
 
     while state.continue_running() {
-        tokio::time::sleep(waiting_for_reconnect).await;
+        tokio::time::sleep(GRACE_TIME_RECONNECT).await;
 
         crate::logger::info!("Starting up Chain API Client...");
         let chain_api =
@@ -241,8 +266,75 @@ pub(super) async fn run_updater(
         }
 
         let chain_api = chain_api.unwrap();
+        let block_query_result = get_finalized_block_number(&chain_api).await;
+
+        if block_query_result.is_err() {
+            crate::logger::error!(
+                "Error during Block Query: {}",
+                block_query_result.err().unwrap()
+            );
+
+            break;
+        }
+
+        let (_, finalized_block_number) = block_query_result.unwrap();
+
+        loop {
+            let next_block_number = state.get_next_unprocessed_block().await?;
+            let block_delta =
+                finalized_block_number.saturating_sub(next_block_number);
+
+            if block_delta >= crate::WORKER_LIMIT {
+                // catch-up phase: start
+                crate::logger::info!("Catching up {block_delta} blocks");
+                let (work_sender, work_receiver) =
+                    crossbeam::channel::unbounded();
+                let mut workers = vec![];
+
+                for _ in 0..crate::WORKER_LIMIT {
+                    let future = transient_worker::transient_block_processor(
+                        state.clone(),
+                        work_receiver.clone(),
+                    );
+                    let worker_join_handle = tokio::spawn(future);
+                    workers.push(worker_join_handle);
+                }
+
+                for block_number_to_process in
+                    next_block_number..finalized_block_number
+                {
+                    let _ = work_sender.try_send(block_number_to_process);
+                }
+
+                loop {
+                    tokio::time::sleep(GRACE_TIME_CATCHUP).await;
+                    let indexed_blocks =
+                        state.get_next_unprocessed_block().await? - 1;
+                    let catchup_progress =
+                        block_delta - (finalized_block_number - indexed_blocks);
+                    let catchup_progress_percent =
+                        catchup_progress as f32 * 100.0 / block_delta as f32;
+                    crate::logger::info!(
+                        "Catching up progress: {catchup_progress} \
+                         ({catchup_progress_percent:.2} %)"
+                    );
+
+                    if indexed_blocks == finalized_block_number {
+                        break;
+                    }
+                }
+
+                for worker in workers {
+                    let _ = worker.await;
+                }
+                // catch-up phase: finished
+            } else {
+                break;
+            }
+        }
 
         while state.continue_running() {
+            tokio::time::sleep(GRACE_TIME_GFB).await;
             let block_query_result =
                 get_finalized_block_number(&chain_api).await;
 
@@ -259,8 +351,6 @@ pub(super) async fn run_updater(
             let next_block_number = state.get_next_unprocessed_block().await?;
 
             if next_block_number > finalized_block_number {
-                tokio::time::sleep(waiting_for_finalization).await;
-
                 continue;
             }
 
@@ -290,8 +380,12 @@ pub(super) async fn run_updater(
             }
 
             let block_data = block_data.unwrap();
-            let new_transactions =
-                get_transactions(next_block_number, block_data).await;
+            let new_transactions = get_transactions(
+                next_block_number,
+                target_block_hash,
+                block_data,
+            )
+            .await;
 
             if new_transactions.is_err() {
                 crate::logger::error!(

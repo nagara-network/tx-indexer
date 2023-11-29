@@ -10,7 +10,7 @@
 Fields:
 
 - `id`: database sequence number, ie. `4`
-- `hash`: extrinsic/call hash, ie. `0x923f94bfee6043df1bc5e491947d84a3e368efa531aa45f439dee16ebaddb6ae`
+- `hash`: block hash, ie. `0x3cabe3fa69e036abfb779fcd9923723de9c75cf94558d9303b63459fa69a847e`
 - `sender`: transaction origin, ie. `gr6mwvfrS6KcnHtTKm8cY5QtnjWyPzMaiDV85SYq1yAfW8D5v`
 - `receiver`: transaction destination, ie. `gr3gnBh93aFoyYgiZdcfPc4FbuhwocFpqA8GFETNMbQ92rQzx`
 - `amount`: transaction amount in `integer * 10^9`, ie. `1000000000000000000000` which equals to 1,000,000,000,000 `NGR`
@@ -36,13 +36,3 @@ Request:
 Response:
 
 - JSON Array of [RelatedTransaction](#response-structure---relatedtransaction)
-
-### Query by Hash
-
-Request:
-
-- Path: `GET /hash/{ss58-account}`, ie. `GET /account/0x923f94bfee6043df1bc5e491947d84a3e368efa531aa45f439dee16ebaddb6ae`
-
-Response:
-
-- JSON of [RelatedTransaction](#response-structure---relatedtransaction)

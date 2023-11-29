@@ -18,9 +18,6 @@ impl TransactionHistories {
     const SQL_SELECT_BY_ACCOUNT: &'static str = include_str!(
         "../../sql_scripts/transaction_histories/select_by_account.sql"
     );
-    const SQL_SELECT_BY_HASH: &'static str = include_str!(
-        "../../sql_scripts/transaction_histories/select_by_hash.sql"
-    );
 
     pub(super) async fn new() -> anyhow::Result<Self> {
         let db_path =
@@ -91,18 +88,6 @@ impl TransactionHistories {
         batch_insert.commit().await?;
 
         Ok(())
-    }
-
-    pub(super) async fn get_by_hash(
-        &self,
-        hash: &str,
-    ) -> anyhow::Result<super::RelatedTransaction> {
-        let query = sqlx::query(Self::SQL_SELECT_BY_HASH).bind(hash);
-        let mut conn = self.inner.acquire().await?;
-        let result_db = conn.fetch_one(query).await?;
-        let result = super::RelatedTransaction::from_row(&result_db)?;
-
-        Ok(result)
     }
 
     pub(super) async fn get_by_account(

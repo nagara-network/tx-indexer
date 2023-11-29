@@ -8,6 +8,7 @@ pub(crate) mod services;
 
 pub(crate) const ENVKEY_ENDPOINT_SOCKET: &str = "ENDPOINT_SOCKET";
 pub(crate) const ENVKEY_RPC_URI: &str = "RPC_URI";
+pub(crate) const WORKER_LIMIT: u32 = 20;
 
 fn get_socket_for_endpoint() -> String {
     match std::env::var(ENVKEY_ENDPOINT_SOCKET) {

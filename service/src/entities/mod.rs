@@ -166,13 +166,6 @@ impl EntityConnector {
             .await
     }
 
-    pub async fn get_transaction_by_hash(
-        &self,
-        hash: &str,
-    ) -> anyhow::Result<RelatedTransaction> {
-        self.conn_transaction_histories.get_by_hash(hash).await
-    }
-
     pub async fn get_next_unprocessed_block(&self) -> anyhow::Result<u32> {
         self.conn_processed_blocks.select_next_block().await
     }
