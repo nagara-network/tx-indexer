@@ -2,6 +2,7 @@ MAKEFLAGS	+=	--jobs 1 --silent --environment-overrides
 SHELL		:=	/bin/bash
 CPU_ARCH	:=	$(shell if [[ "$(shell uname -m)" = "x86_64" ]]; then echo amd64; else echo arm64; fi)
 IMAGE_NAME	:=	ghcr.io/nagara-network/tx-indexer:${CPU_ARCH}
+RUST_BUILD_ARG	:=	-C target-cpu=generic
 
 .PHONY: all check debug release docker docker-push refresh clean
 .ONESHELL: all check debug release docker docker-push refresh clean
@@ -33,7 +34,9 @@ clean:
 
 docker:
 	@echo -e "\033[34m\nDocker Build...\033[0m"
-	@docker build --build-arg CPU_ARCH=${CPU_ARCH} \
+	@echo -e "\033[37m\nRUST_BUILD_ARG=\"${RUST_BUILD_ARG}\"\n\033[0m"
+	@docker build --build-arg CPU_ARCH="${CPU_ARCH}" \
+		--build-arg RUST_BUILD_ARG="${RUST_BUILD_ARG}" \
 		-t ${IMAGE_NAME} \
 		.
 

@@ -1,4 +1,4 @@
-use sqlx::{Executor, Row};
+use sqlx::{ConnectOptions, Executor, Row};
 
 #[derive(Clone)]
 pub(super) struct ProcessedBlocks {
@@ -19,15 +19,20 @@ impl ProcessedBlocks {
         let db_path =
             format!("{}/{}", super::EntityConnector::DIR_DATA, Self::FILENAME);
         let connection_option = sqlx::sqlite::SqliteConnectOptions::new()
-            .auto_vacuum(sqlx::sqlite::SqliteAutoVacuum::Incremental)
-            .busy_timeout(tokio::time::Duration::from_secs(1))
+            .auto_vacuum(sqlx::sqlite::SqliteAutoVacuum::None)
+            .busy_timeout(tokio::time::Duration::from_secs(10))
             .create_if_missing(true)
             .filename(&db_path)
             .foreign_keys(false)
             .immutable(false)
-            .journal_mode(sqlx::sqlite::SqliteJournalMode::Persist)
+            .journal_mode(sqlx::sqlite::SqliteJournalMode::Truncate)
             .locking_mode(sqlx::sqlite::SqliteLockingMode::Normal)
-            .optimize_on_close(true, None)
+            .log_slow_statements(
+                log::LevelFilter::Warn,
+                tokio::time::Duration::from_secs(3),
+            )
+            .log_statements(log::LevelFilter::Debug)
+            .optimize_on_close(false, None)
             .shared_cache(false)
             .synchronous(sqlx::sqlite::SqliteSynchronous::Extra);
         let inner = sqlx::SqlitePool::connect_with(connection_option).await?;

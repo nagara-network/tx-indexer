@@ -12,7 +12,6 @@ const GRACE_TIME_CATCHUP: tokio::time::Duration =
 async fn create_rpc_client(
 ) -> anyhow::Result<subxt::OnlineClient<subxt::PolkadotConfig>> {
     let rpc_uri = crate::get_rpc_uri();
-
     let chain_api =
         subxt::OnlineClient::<subxt::PolkadotConfig>::from_url(&rpc_uri)
             .await?;
@@ -332,6 +331,8 @@ pub(super) async fn run_updater(
                 break;
             }
         }
+
+        crate::logger::info!("Catching up phase finished");
 
         while state.continue_running() {
             tokio::time::sleep(GRACE_TIME_GFB).await;
