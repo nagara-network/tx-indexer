@@ -1,0 +1,59 @@
+[package]
+name = "nagara-transfer-indexer"
+version = "1.0.24-alpha.3"
+edition = "2021"
+
+[patch.crates-io]
+ss58-registry = { git = "https://github.com/nagara-network/ss58-registry", rev = "0542581" }
+
+[dependencies]
+actix-cors = "0.7.0"
+actix-web = { version = "4.5.1", features = ["macros", "rustls"], default-features = false }
+anyhow = { version = "1.0.79", features = ["backtrace"] }
+async-channel = "2.1.1"
+bigdecimal = { version = "0.4.2", features = ["serde"] }
+chrono = { version = "0.4.33", features = ["serde"] }
+curve25519-dalek = { version = "=4.1.1", features = [
+    "digest",
+    "legacy_compatibility",
+    "precomputed-tables",
+    "zeroize",
+] }
+hex = { version = "0.4.3", features = ["serde"] }
+mimalloc = { version = "0.1.39", features = ["local_dynamic_tls", "override"] }
+redis = { version = "0.24.0", features = [
+    "connection-manager",
+    "json",
+    "r2d2",
+    "tcp_nodelay",
+    "tokio-comp",
+] }
+reqwest-tracing = "0.4.7"
+rust_decimal = "1.34.2"
+serde = { version = "1.0.196", features = ["derive"] }
+sqlx = { version = "0.7.3", features = [
+    "chrono",
+    "json",
+    "macros",
+    "mysql",
+    "runtime-tokio-rustls",
+] }
+ss58-registry = { git = "https://github.com/nagara-network/ss58-registry", rev = "0542581" }
+subxt = { version = "0.34.0", features = ["getrandom", "substrate-compat"] }
+tokio = { version = "1.36.0", features = ["full"] }
+tracing = { version = "0.1.40", features = [
+    "async-await",
+    "log-always",
+    "max_level_debug",
+    "release_max_level_info",
+] }
+tracing-actix-web = "0.7.9"
+tracing-subscriber = { version = "0.3.18", features = [
+    "chrono",
+    "env-filter",
+    "json",
+    "serde",
+    "serde_json",
+] }
+tracing-unwrap = { version = "0.10.0", features = ["log-location"] }
+url = { version = "2.5.0", features = ["serde"] }
