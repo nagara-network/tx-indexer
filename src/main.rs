@@ -25,6 +25,19 @@ where
     }
 }
 
+#[macro_export]
+macro_rules! try_with_print {
+    ($expr:expr $(,)?) => {
+        match $expr {
+            | core::result::Result::Ok(val) => val,
+            | core::result::Result::Err(err) => {
+                $crate::error!("{err}");
+                return core::result::Result::Err(err.into());
+            },
+        }
+    };
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     subxt::ext::sp_core::crypto::set_default_ss58_version(

@@ -156,11 +156,25 @@ impl ProcessedBlock {
     ) -> anyhow::Result<Self> {
         let mut timestamp_call = None;
         let mut balance_transfer_extrinsics = vec![];
-        let (hash, block_data) = chain_client.get_block_data(number).await?;
-        let extrinsics = block_data.extrinsics().await?.iter().flatten();
+        let (hash, block_data) = crate::try_with_print!(chain_client.get_block_data(number).await);
+        let extrinsics = crate::try_with_print!(block_data.extrinsics().await)
+            .iter()
+            .flatten();
 
         for (sequence, extrinsic) in extrinsics.enumerate() {
-            let root_extrinsic = extrinsic.as_root_extrinsic::<RootExtrinsic>()?;
+            let root_extrinsic = {
+                match extrinsic.as_root_extrinsic::<RootExtrinsic>() {
+                    | Err(err) => {
+                        crate::error!(
+                            "Metadata mismatch for codec Id {} while processing block {}:\n  {err}",
+                            extrinsic.index(),
+                            number,
+                        );
+                        continue;
+                    },
+                    | Ok(runtime_call) => runtime_call,
+                }
+            };
 
             match root_extrinsic {
                 | RootExtrinsic::Timestamp(inner) => timestamp_call = Some(inner),
@@ -178,11 +192,14 @@ impl ProcessedBlock {
                         continue;
                     }
 
-                    let events = extrinsic.events().await?;
+                    let events = crate::try_with_print!(extrinsic.events().await);
                     let sequence = sequence as u32;
-                    let event_transfer = events.find_first::<EventTransfer>()?;
-                    let event_fee_paid = events.find_first::<EventFeePaid>()?;
-                    let event_extrinsic_success = events.find_first::<EventExtrinsicSuccess>()?;
+                    let event_transfer =
+                        crate::try_with_print!(events.find_first::<EventTransfer>());
+                    let event_fee_paid =
+                        crate::try_with_print!(events.find_first::<EventFeePaid>());
+                    let event_extrinsic_success =
+                        crate::try_with_print!(events.find_first::<EventExtrinsicSuccess>());
 
                     balance_transfer_extrinsics.push(BalanceTransferExtrinsic {
                         sequence,
